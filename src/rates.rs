@@ -13,7 +13,7 @@ use jiff::{Zoned, civil::Date};
 use reqwest::blocking::Client;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, strum::Display, strum::EnumString)]
-pub(crate) enum Series {
+pub enum Series {
 	#[strum(serialize = "EURUSD")]
 	EurUsd,
 	#[strum(serialize = "CPIU")]
@@ -50,11 +50,9 @@ impl Rates {
 	pub fn write(&self, path: &Path) -> Result<()> {
 		let mut out = csv::Writer::from_path(path)?;
 		out.write_record(["date", "series", "value"])?;
-		for (series, points) in &self.0 {
-			for (day, value) in points {
-				let date = if series.monthly() { day.strftime("%Y-%m").to_string() } else { day.to_string() };
-				out.write_record([date, series.to_string(), value.to_string()])?;
-			}
+		for (series, day, value) in self.iter() {
+			let date = if series.monthly() { day.strftime("%Y-%m").to_string() } else { day.to_string() };
+			out.write_record([date, series.to_string(), value.to_string()])?;
 		}
 		out.flush()?;
 		Ok(())
@@ -69,6 +67,11 @@ impl Rates {
 
 	pub fn len(&self) -> usize {
 		self.0.values().map(BTreeMap::len).sum()
+	}
+
+	/// By series, then by day; a month is its first day.
+	pub fn iter(&self) -> impl Iterator<Item = (Series, Date, f64)> + '_ {
+		self.0.iter().flat_map(|(s, points)| points.iter().map(|(d, v)| (*s, *d, *v)))
 	}
 
 	/// The point in force on `day`: the latest on or before it.
