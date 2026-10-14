@@ -159,7 +159,7 @@ impl Money {
 
 impl Component for Money {
 	fn string(&self, s: String) -> String {
-		let s = MARKER.replace_all(&s, format!("${{1}}_{VAR}")).into_owned();
+		let s = MARKER.replace_all(&s, |c: &regex::Captures| format!("{}_{VAR}", &c[1])).into_owned();
 		assert!(!s.contains("$money("), "`$money(…)` takes one column, not an expression: {s}");
 		s
 	}
