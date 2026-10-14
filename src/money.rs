@@ -10,8 +10,11 @@
 
 use std::sync::LazyLock;
 
-use eyre::{Result, ensure};
-use jiff::{Zoned, civil::Date};
+use eyre::{OptionExt, Result, ensure};
+use jiff::{
+	Zoned,
+	civil::{Date, date},
+};
 use regex::Regex;
 use rusqlite::{Connection, functions::FunctionFlags};
 use serde_json::{Map, Value, json};
@@ -109,10 +112,14 @@ impl Money {
 	fn anchor(&self, basis: Basis) -> Result<f64> {
 		let index = basis.ccy().index();
 		Ok(match basis {
+			// The mean of what was printed: a month the source never published (CPI-U,
+			// 2025-10) is out of its own annual average too.
 			Basis::Usd2025 => {
-				let year: Vec<f64> = self.rates.0.get(&index).into_iter().flatten().filter(|(d, _)| d.year() == 2025).map(|(_, v)| *v).collect();
-				ensure!(year.len() == 12, "{index}: {} of the 12 prints of 2025; refetch rates from 2025 or earlier", year.len());
-				year.iter().sum::<f64>() / 12.0
+				let points = self.rates.0.get(&index).ok_or_eyre(format!("no {index} prints"))?;
+				let (first, last) = (*points.first_key_value().expect("a series is never empty").0, *points.last_key_value().expect("a series is never empty").0);
+				ensure!(first <= date(2025, 1, 1) && last >= date(2025, 12, 1), "{index}: {first}..{last} does not cover 2025; refetch rates from 2025 or earlier");
+				let year: Vec<f64> = points.iter().filter(|(d, _)| d.year() == 2025).map(|(_, v)| *v).collect();
+				year.iter().sum::<f64>() / year.len() as f64
 			}
 			Basis::UsdNow | Basis::EurNow => self.rates.at(index, Date::MAX)?,
 		})
