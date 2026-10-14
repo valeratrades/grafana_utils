@@ -1,0 +1,19 @@
+[package]
+name = "grafana_utils"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "grafana-utils"
+path = "src/main.rs"
+
+[dependencies]
+csv = "1"
+eyre = "0.6"
+jiff = "0.2"
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+rusqlite = { version = "0.37", features = ["bundled", "functions"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+strum = { version = "0.27", features = ["derive"] }
+
