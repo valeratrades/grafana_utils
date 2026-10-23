@@ -2,6 +2,10 @@
 name = "grafana_utils"
 version = "0.1.0"
 edition = "2024"
+authors = ["Valeriy Sakharov <valeratrades@gmail.com>"]
+description = "Published rate series (ECB, BLS, Eurostat) and deflated money bases, for SQLite-backed Grafana dashboards"
+license = "BlueOak-1.0.0"
+repository = "https://github.com/valeratrades/grafana_utils"
 
 [[bin]]
 name = "grafana-utils"
