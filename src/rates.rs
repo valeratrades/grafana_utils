@@ -8,7 +8,7 @@
 
 use std::{collections::BTreeMap, path::Path, time::Duration};
 
-use eyre::{OptionExt, Result, ensure};
+use eyre::{OptionExt, Result, WrapErr, ensure};
 use jiff::{Zoned, civil::Date};
 use reqwest::blocking::Client;
 
@@ -89,9 +89,9 @@ impl Rates {
 pub fn fetch(since: Date) -> Result<Rates> {
 	let http = Client::builder().timeout(Duration::from_secs(60)).build()?;
 	let mut rates = Rates::default();
-	rates.0.insert(Series::EurUsd, ecb(&http, "EXR/D.USD.EUR.SP00.A", &since.to_string())?);
-	rates.0.insert(Series::HicpFr, ecb(&http, "HICP/M.FR.N.000000.4D0.INX", &since.strftime("%Y-%m").to_string())?);
-	rates.0.insert(Series::CpiU, cpi(&http, since)?);
+	rates.0.insert(Series::EurUsd, ecb(&http, "EXR/D.USD.EUR.SP00.A", &since.to_string()).wrap_err("fetching EUR/USD from the ECB")?);
+	rates.0.insert(Series::HicpFr, ecb(&http, "HICP/M.FR.N.000000.4D0.INX", &since.strftime("%Y-%m").to_string()).wrap_err("fetching HICP France from the ECB")?);
+	rates.0.insert(Series::CpiU, cpi(&http, since).wrap_err_with(|| format!("fetching CPI-U ({CPI_SERIES}) from the BLS"))?);
 	Ok(rates)
 }
 
